@@ -25,7 +25,7 @@ const proc = async ({ dbConnectionString, query, count }) => {
     await transaction(
       apm,
       'test',
-      () => db.raw(query, { now: new Date(), random100: Math.floor(Math.random() * 100) })
+      () => db.raw(query, { now: new Date(), random100: Math.floor(Math.random() * 100) + 1 })
     );
   }
 
