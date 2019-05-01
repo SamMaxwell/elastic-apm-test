@@ -3,26 +3,53 @@ const apm = require('elastic-apm-node').start({ logLevel: 'trace' });
 const knex = require('knex');
 const knexConfig = require('./knex-config');
 
-const proc = async ({ dbConnectionString, query }) => {
+const transaction = async (apm, name, cb) => {
+  const trx = apm.startTransaction('test');
+  let results;
+  let err;
+  try {
+    results = await cb();
+  } catch(exception) {
+    err = exception;
+  }
+  trx.end();
+  if (err) throw err;
+  return results;
+}
+
+const proc = async ({ dbConnectionString, query, count }) => {
   const config = knexConfig(dbConnectionString);
   const db = knex(config);
-  await db.raw(query, { now: new Date(), random100: Math.floor(Math.random() * 100) });
+
+  for (let i = 0; i < count; i += 1) {
+    await transaction(
+      apm,
+      'test',
+      () => db.raw(query, { now: new Date(), random100: Math.floor(Math.random() * 100) })
+    );
+  }
+
+  apm.flush();
   process.exit(0);
 }
 
-const [_, __, dbConnectionString, query] = process.argv
+const [_, __, dbConnectionString, query, countString] = process.argv
+
+let count;
 
 const error =
   !dbConnectionString ? 'dbConnectionString (cli argument) is required'
   : !query ? 'query (cli argument) is required'
+  : Number.isNaN(count = Number.parseInt(countString || '1', 10)) ? 'count (cli argument) must be a Number'
   : undefined;
 
 if (error) {
   console.error(error);
-  console.warn('usage: node . dbConnectionString query');
-  console.warn('  dbConnectionString (string)   db connection string');
-  console.warn('  query (string)                query to run (supports :now and :random100 substitutions)');
+  console.warn('usage: node . dbConnectionString query count');
+  console.warn('  dbConnectionString (String)   db connection string');
+  console.warn('  query (String)                query to run (supports :now and :random100 substitutions)');
+  console.warn('  count (Number)                count of times the query should run (default 1)');
   process.exit(1);
 }
 
-proc({ dbConnectionString, query });
+proc({ dbConnectionString, query, count });
