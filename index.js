@@ -1,10 +1,10 @@
-const apm = require('elastic-apm-node').start({ logLevel: 'trace' });
+const apmClient = !process.env.NO_APM ? require('elastic-apm-node').start() : undefined;
 
 const knex = require('knex');
 const knexConfig = require('./knex-config');
 
 const transaction = async (apm, name, cb) => {
-  const trx = apm.startTransaction('test');
+  const trx = apm ? apm.startTransaction(name) : undefined;
   let results;
   let err;
   try {
@@ -12,12 +12,12 @@ const transaction = async (apm, name, cb) => {
   } catch(exception) {
     err = exception;
   }
-  trx.end();
+  if (trx) trx.end();
   if (err) throw err;
   return results;
 }
 
-const proc = async ({ dbConnectionString, query, count }) => {
+const proc = async ({ apm, dbConnectionString, query, count }) => {
   const config = knexConfig(dbConnectionString);
   const db = knex(config);
 
@@ -29,7 +29,6 @@ const proc = async ({ dbConnectionString, query, count }) => {
     );
   }
 
-  apm.flush();
   process.exit(0);
 }
 
@@ -52,4 +51,4 @@ if (error) {
   process.exit(1);
 }
 
-proc({ dbConnectionString, query, count });
+proc({ apm: apmClient, dbConnectionString, query, count });

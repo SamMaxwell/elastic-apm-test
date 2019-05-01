@@ -16,4 +16,9 @@ where:
 
 # note
 
-    you should probably set the ELASTIC_APM_SERVER_URL and ELASTIC_APM_SECRET_TOKEN env variables
+    you should probably set the env variables:
+      ELASTIC_APM_SERVER_URL
+      ELASTIC_APM_SECRET_TOKEN
+      and ELASTIC_APM_LOG_LEVEL
+
+    if you set NO_APM you will disable APM
