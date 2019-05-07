@@ -5,6 +5,7 @@ const knexConfig = require('./knex-config');
 
 const transaction = async (apm, name, cb) => {
   const trx = apm ? apm.startTransaction(name) : undefined;
+  // trx.addLabels({ environment: 'test' });
   let results;
   let err;
   try {
