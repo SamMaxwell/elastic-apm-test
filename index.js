@@ -30,7 +30,7 @@ const proc = async ({ apm, dbConnectionString, query, count }) => {
     );
   }
 
-  process.exit(0);
+  apm.flush(() => { process.exit(0) });
 }
 
 const [_, __, dbConnectionString, query, countString] = process.argv
